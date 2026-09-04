@@ -89,7 +89,7 @@
 
   .thin-line {
     stroke: var(--ink);
-    stroke-width: 4.5;
+    stroke-width: 4;
     opacity: 0;
     transition: opacity 0.2s ease;
   }
@@ -110,7 +110,7 @@
 
   .x-line {
     stroke: var(--ink);
-    stroke-width: 6.75;
+    stroke-width: 6;
     opacity: 0;
     transition: opacity 0.2s ease;
   }
@@ -128,8 +128,8 @@
 
   .guide-line {
     stroke: var(--rule);
-    stroke-width: 2.25;
-    stroke-dasharray: 10.5 9;
+    stroke-width: 2;
+    stroke-dasharray: 9.3 8;
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.2s ease;
@@ -142,7 +142,7 @@
   .spawn-dot-ring {
     fill: none;
     stroke: var(--ink-soft);
-    stroke-width: 9;
+    stroke-width: 8;
     opacity: 0;
     transition: opacity 0.25s ease;
   }
@@ -161,14 +161,14 @@
   .death-bubble-bg {
     fill: var(--card);
     stroke: var(--ink);
-    stroke-width: 2.25;
+    stroke-width: 2;
   }
 
   .death-bubble-text {
     fill: #f2c94c;
     font-family: "JetBrains Mono", ui-monospace, monospace;
     font-weight: 700;
-    font-size: 22.5px;
+    font-size: 20px;
     text-anchor: middle;
     dominant-baseline: central;
     user-select: none;
@@ -198,7 +198,7 @@
     fill: var(--card);
     font-family: "JetBrains Mono", ui-monospace, monospace;
     font-weight: 700;
-    font-size: 23.4px;
+    font-size: 20.8px;
     text-anchor: middle;
     dominant-baseline: central;
     user-select: none;
@@ -207,7 +207,7 @@
   .hitbox-dot {
     fill: var(--user-marker);
     stroke: var(--card);
-    stroke-width: 4.5;
+    stroke-width: 4;
   }
 
   .hitbox-dot.dead {
@@ -376,7 +376,7 @@
 </div>
 
 <script>
-  const SCALE = 2.25; // overall board scale-up (1.5 x 1.5 across two rounds); every board dimension derives from this
+  const SCALE = 2; // overall board scale-up from the original design; every board dimension derives from this
   const CELL = 75 * SCALE;
   const N = 4;
   const STEPS = N * 3; // N spawns, then N pairs each doing a fire + revert step
@@ -395,18 +395,34 @@
   const STEP_MS = 750;
   const SPAWN_STEP_MS = 1250;
 
-  const BLOCK_MIN = CELL;
-  const BLOCK_MAX = CELL * (N + 1);
-  const TOP_Y = CELL * 0.5;
-  const RIGHT_X = CELL * (N + 1.5);
-  const TOTAL = CELL * (N + 2);
-  const MID = (BLOCK_MIN + BLOCK_MAX) / 2;
-  const CENTER_DOT_R = (CELL / 3) * 0.85;
-  const center = k => BLOCK_MIN + (k + 0.5) * CELL; // center of inner column/row k
+  // Left/right padding stays a full cell (it holds the right-side spawn circles).
+  // Top padding is sized to the spawn-ring's own footprint plus a small margin — the
+  // practical minimum before it clips — since that row holds nothing else. Bottom
+  // padding holds nothing at all, so it's just a thin closing margin.
+  const FOCAL_SIZE = CELL * N;
+  const H_PAD = CELL;
+  const SPAWN_RING_R = 20 * SCALE;
+  const SPAWN_RING_STROKE_HALF = 4; // half of .spawn-dot-ring's CSS stroke-width (8) — its visual edge extends this far past SPAWN_RING_R
+  const TOP_PAD = ((SPAWN_RING_R + SPAWN_RING_STROKE_HALF) * 2 + 12) * 0.35; // cut 65% below the no-clip minimum
+  const BOTTOM_PAD = CELL * 0.2;
 
-  boardEl.setAttribute('width', TOTAL);
-  boardEl.setAttribute('height', TOTAL);
-  boardEl.setAttribute('viewBox', `0 0 ${TOTAL} ${TOTAL}`);
+  const BLOCK_MIN_X = H_PAD;
+  const BLOCK_MAX_X = H_PAD + FOCAL_SIZE;
+  const BLOCK_MIN_Y = TOP_PAD;
+  const BLOCK_MAX_Y = TOP_PAD + FOCAL_SIZE;
+  const TOP_Y = TOP_PAD * 0.5;
+  const RIGHT_X = BLOCK_MAX_X + H_PAD * 0.5;
+  const TOTAL_W = H_PAD + FOCAL_SIZE + H_PAD;
+  const TOTAL_H = TOP_PAD + FOCAL_SIZE + BOTTOM_PAD;
+  const MID_X = (BLOCK_MIN_X + BLOCK_MAX_X) / 2;
+  const MID_Y = (BLOCK_MIN_Y + BLOCK_MAX_Y) / 2;
+  const CENTER_DOT_R = (CELL / 3) * 0.85;
+  const centerX = k => BLOCK_MIN_X + (k + 0.5) * CELL; // center of inner column k
+  const centerY = k => BLOCK_MIN_Y + (k + 0.5) * CELL; // center of inner row k
+
+  boardEl.setAttribute('width', TOTAL_W);
+  boardEl.setAttribute('height', TOTAL_H);
+  boardEl.setAttribute('viewBox', `0 0 ${TOTAL_W} ${TOTAL_H}`);
 
   const NS = 'http://www.w3.org/2000/svg';
   function svgEl(tag, attrs) {
@@ -452,8 +468,8 @@
     removeDeathBubble();
     const text = DEATH_LINES[Math.floor(Math.random() * DEATH_LINES.length)];
     const bubbleY = y - 40 * SCALE;
-    const charW = 13.5; // approx JetBrains Mono advance width at the 22.5px bubble font-size
-    const width = Math.max(70 * SCALE, text.length * charW + 36);
+    const charW = 12; // approx JetBrains Mono advance width at the 20px bubble font-size
+    const width = Math.max(70 * SCALE, text.length * charW + 32);
     const height = 30 * SCALE;
     const bg = svgEl('rect', {
       class: 'death-bubble-bg',
@@ -472,17 +488,17 @@
 
     boardEl.appendChild(svgEl('rect', {
       class: 'focal-bg',
-      x: BLOCK_MIN, y: BLOCK_MIN,
-      width: BLOCK_MAX - BLOCK_MIN, height: BLOCK_MAX - BLOCK_MIN
+      x: BLOCK_MIN_X, y: BLOCK_MIN_Y,
+      width: FOCAL_SIZE, height: FOCAL_SIZE
     }));
 
     // persistent center marker, bottom layer: present through every step, covered by
     // anything that lights up above it (cell fills, the X flourish, thin lines)
-    boardEl.appendChild(svgEl('circle', { class: 'center-dot', cx: MID, cy: MID, r: CENTER_DOT_R }));
+    boardEl.appendChild(svgEl('circle', { class: 'center-dot', cx: MID_X, cy: MID_Y, r: CENTER_DOT_R }));
 
     // optional guide X: a purely visual reference spanning the whole arena, not a hazard
-    guideLine1 = svgEl('line', { class: 'guide-line', x1: BLOCK_MIN, y1: BLOCK_MIN, x2: BLOCK_MAX, y2: BLOCK_MAX });
-    guideLine2 = svgEl('line', { class: 'guide-line', x1: BLOCK_MAX, y1: BLOCK_MIN, x2: BLOCK_MIN, y2: BLOCK_MAX });
+    guideLine1 = svgEl('line', { class: 'guide-line', x1: BLOCK_MIN_X, y1: BLOCK_MIN_Y, x2: BLOCK_MAX_X, y2: BLOCK_MAX_Y });
+    guideLine2 = svgEl('line', { class: 'guide-line', x1: BLOCK_MAX_X, y1: BLOCK_MIN_Y, x2: BLOCK_MIN_X, y2: BLOCK_MAX_Y });
     boardEl.appendChild(guideLine1);
     boardEl.appendChild(guideLine2);
 
@@ -491,7 +507,7 @@
       for (let c = 0; c < N; c++) {
         const rect = svgEl('rect', {
           class: 'cell-fill',
-          x: BLOCK_MIN + c * CELL, y: BLOCK_MIN + r * CELL,
+          x: BLOCK_MIN_X + c * CELL, y: BLOCK_MIN_Y + r * CELL,
           width: CELL, height: CELL
         });
         boardEl.appendChild(rect);
@@ -502,44 +518,44 @@
     // one-time giant-X flourish (step 5 only): diagonals plus filled north/south wedges
     xNorthFill = svgEl('polygon', {
       class: 'x-fill',
-      points: `${BLOCK_MIN},${BLOCK_MIN} ${BLOCK_MAX},${BLOCK_MIN} ${MID},${MID}`
+      points: `${BLOCK_MIN_X},${BLOCK_MIN_Y} ${BLOCK_MAX_X},${BLOCK_MIN_Y} ${MID_X},${MID_Y}`
     });
     xSouthFill = svgEl('polygon', {
       class: 'x-fill',
-      points: `${BLOCK_MIN},${BLOCK_MAX} ${BLOCK_MAX},${BLOCK_MAX} ${MID},${MID}`
+      points: `${BLOCK_MIN_X},${BLOCK_MAX_Y} ${BLOCK_MAX_X},${BLOCK_MAX_Y} ${MID_X},${MID_Y}`
     });
     boardEl.appendChild(xNorthFill);
     boardEl.appendChild(xSouthFill);
 
-    xDiag1 = svgEl('line', { class: 'x-line', x1: BLOCK_MIN, y1: BLOCK_MIN, x2: BLOCK_MAX, y2: BLOCK_MAX });
-    xDiag2 = svgEl('line', { class: 'x-line', x1: BLOCK_MAX, y1: BLOCK_MIN, x2: BLOCK_MIN, y2: BLOCK_MAX });
+    xDiag1 = svgEl('line', { class: 'x-line', x1: BLOCK_MIN_X, y1: BLOCK_MIN_Y, x2: BLOCK_MAX_X, y2: BLOCK_MAX_Y });
+    xDiag2 = svgEl('line', { class: 'x-line', x1: BLOCK_MAX_X, y1: BLOCK_MIN_Y, x2: BLOCK_MIN_X, y2: BLOCK_MAX_Y });
     boardEl.appendChild(xDiag1);
     boardEl.appendChild(xDiag2);
 
     // thin pair-lines, running through the center of each column/row
     for (let k = 0; k < N; k++) {
-      const x = center(k);
-      const vLine = svgEl('line', { class: 'thin-line', x1: x, y1: TOP_Y, x2: x, y2: BLOCK_MAX });
+      const x = centerX(k);
+      const vLine = svgEl('line', { class: 'thin-line', x1: x, y1: TOP_Y, x2: x, y2: BLOCK_MAX_Y });
       boardEl.appendChild(vLine);
       vThinLines[k] = vLine;
 
-      const y = center(k);
-      const hLine = svgEl('line', { class: 'thin-line', x1: RIGHT_X, y1: y, x2: BLOCK_MIN, y2: y });
+      const y = centerY(k);
+      const hLine = svgEl('line', { class: 'thin-line', x1: RIGHT_X, y1: y, x2: BLOCK_MIN_X, y2: y });
       boardEl.appendChild(hLine);
       hThinLines[k] = hLine;
     }
 
     for (let k = 0; k < N; k++) {
-      const cx = center(k), cy = TOP_Y;
-      const ring = svgEl('circle', { class: 'spawn-dot-ring', cx, cy, r: 20 * SCALE });
+      const cx = centerX(k), cy = TOP_Y;
+      const ring = svgEl('circle', { class: 'spawn-dot-ring', cx, cy, r: SPAWN_RING_R });
       const core = svgEl('circle', { class: 'spawn-dot-core', cx, cy, r: 10 * SCALE });
       boardEl.appendChild(ring); boardEl.appendChild(core);
       topRings[k] = ring; topCores[k] = core;
     }
 
     for (let k = 0; k < N; k++) {
-      const cx = RIGHT_X, cy = center(k);
-      const ring = svgEl('circle', { class: 'spawn-dot-ring', cx, cy, r: 20 * SCALE });
+      const cx = RIGHT_X, cy = centerY(k);
+      const ring = svgEl('circle', { class: 'spawn-dot-ring', cx, cy, r: SPAWN_RING_R });
       const core = svgEl('circle', { class: 'spawn-dot-core', cx, cy, r: 10 * SCALE });
       boardEl.appendChild(ring); boardEl.appendChild(core);
       rightRings[k] = ring; rightCores[k] = core;
@@ -558,7 +574,7 @@
     }
 
     // the player's hitbox marker, always drawn last (on top of everything)
-    hitboxDot = svgEl('circle', { class: 'hitbox-dot', cx: MID, cy: MID, r: 9 * SCALE * 0.7 });
+    hitboxDot = svgEl('circle', { class: 'hitbox-dot', cx: MID_X, cy: MID_Y, r: 9 * SCALE * 0.7 });
     boardEl.appendChild(hitboxDot);
   }
 
@@ -640,7 +656,7 @@
     pt.x = evt.clientX;
     pt.y = evt.clientY;
     const svgPt = pt.matrixTransform(boardEl.getScreenCTM().inverse());
-    if (svgPt.x < BLOCK_MIN || svgPt.x > BLOCK_MAX || svgPt.y < BLOCK_MIN || svgPt.y > BLOCK_MAX) return;
+    if (svgPt.x < BLOCK_MIN_X || svgPt.x > BLOCK_MAX_X || svgPt.y < BLOCK_MIN_Y || svgPt.y > BLOCK_MAX_Y) return;
     placeHitbox(svgPt.x, svgPt.y);
   });
 
@@ -676,10 +692,10 @@
 
       // order-helper badge sits at this pair's own line intersection
       const showBadge = orderCheckbox.checked && showThin;
-      orderBadgeBgs[k].setAttribute('cx', center(c));
-      orderBadgeBgs[k].setAttribute('cy', center(r));
-      orderBadgeTexts[k].setAttribute('x', center(c));
-      orderBadgeTexts[k].setAttribute('y', center(r));
+      orderBadgeBgs[k].setAttribute('cx', centerX(c));
+      orderBadgeBgs[k].setAttribute('cy', centerY(r));
+      orderBadgeTexts[k].setAttribute('x', centerX(c));
+      orderBadgeTexts[k].setAttribute('y', centerY(r));
       orderBadgeBgs[k].classList.toggle('on', showBadge);
       orderBadgeTexts[k].classList.toggle('on', showBadge);
     }
@@ -717,7 +733,7 @@
     hitboxDot.classList.remove('dead');
     removeDeathBubble();
     render(); // clears every hazard for the fresh step-0 board before placing the hitbox
-    placeHitbox(MID, MID + CENTER_DOT_R); // bottom edge of the red center circle
+    placeHitbox(MID_X, MID_Y + CENTER_DOT_R); // bottom edge of the red center circle
   }
 
   function advance() {
