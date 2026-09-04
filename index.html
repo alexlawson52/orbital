@@ -816,12 +816,24 @@
   resetBtn.addEventListener('click', () => { stopAuto(); reset(); });
   autoBtn.addEventListener('click', toggleAuto);
   orderCheckbox.addEventListener('change', render);
-  guideCheckbox.addEventListener('change', () => {
+
+  function syncGuide() {
     guideLine1.classList.toggle('on', guideCheckbox.checked);
     guideLine2.classList.toggle('on', guideCheckbox.checked);
-  });
+  }
+  guideCheckbox.addEventListener('change', syncGuide);
 
   buildBoard();
   buildRail();
+
+  // Some browsers restore a checkbox's last checked state across a plain reload even
+  // with no `checked` attribute in the HTML, which desyncs it from the (unchecked-by-
+  // default) visuals since those only update on a user-driven 'change' event. Force
+  // every toggle back to its true default and resync now that the board exists.
+  loopCheckbox.checked = false;
+  orderCheckbox.checked = false;
+  guideCheckbox.checked = false;
+  syncGuide();
+
   reset();
 </script>
