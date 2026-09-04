@@ -598,13 +598,22 @@
     }
   }
 
-  function shuffled(n) {
-    const arr = Array.from({ length: n }, (_, i) => i);
-    for (let i = arr.length - 1; i > 0; i--) {
+  function shuffleArray(arr) {
+    const a = arr.slice();
+    for (let i = a.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
-      [arr[i], arr[j]] = [arr[j], arr[i]];
+      [a[i], a[j]] = [a[j], a[i]];
     }
-    return arr;
+    return a;
+  }
+
+  // Matches the real fight's constraint: the 2nd pair spawned always intersects on
+  // one of the 4 inner cells, so its column/row (index 1) is always 1 or 2 — the other
+  // three pairs freely take whatever indices are left, in random order.
+  function orderWithInnerSecond() {
+    const innerChoice = Math.random() < 0.5 ? 1 : 2;
+    const rest = shuffleArray([0, 1, 2, 3].filter(v => v !== innerChoice));
+    return [rest[0], innerChoice, rest[1], rest[2]];
   }
 
   function setRowColFill(r, c, on) {
@@ -724,8 +733,8 @@
   }
 
   function reset() {
-    colOrder = shuffled(N);
-    rowOrder = shuffled(N);
+    colOrder = orderWithInnerSecond();
+    rowOrder = orderWithInnerSecond();
     step = 0;
     dead = false;
     roundResolved = false;
