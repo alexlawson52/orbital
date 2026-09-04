@@ -331,18 +331,6 @@
     cursor: pointer;
   }
 
-  #patternSelect {
-    font-family: "JetBrains Mono", ui-monospace, monospace;
-    font-size: 12px;
-    letter-spacing: 0.04em;
-    color: var(--text);
-    background: var(--card);
-    border: 1px solid var(--rule);
-    border-radius: 5px;
-    padding: 4px 8px;
-    cursor: pointer;
-  }
-
   button:disabled {
     opacity: 0.35;
     cursor: not-allowed;
@@ -384,16 +372,6 @@
         Show Guide X
       </label>
     </div>
-    <div class="controls-row">
-      <label class="loop-toggle" for="patternSelect">Pattern</label>
-      <select id="patternSelect">
-        <option value="random" selected>Random</option>
-        <option value="p1">Easy Dodge (Fast)</option>
-        <option value="p2">Easy Dodge (Slow)</option>
-        <option value="p3a">Double Dodge (Example 1)</option>
-        <option value="p3b">Double Dodge (Example 2)</option>
-      </select>
-    </div>
   </div>
 </div>
 
@@ -411,7 +389,6 @@
   const loopCheckbox = document.getElementById('loopCheckbox');
   const orderCheckbox = document.getElementById('orderCheckbox');
   const guideCheckbox = document.getElementById('guideCheckbox');
-  const patternSelect = document.getElementById('patternSelect');
   const statusEl = document.getElementById('status');
   const winCountEl = document.getElementById('winCount');
   const lossCountEl = document.getElementById('lossCount');
@@ -639,15 +616,6 @@
     return [rest[0], innerChoice, rest[1], rest[2]];
   }
 
-  // Fixed, reproducible test patterns for practicing a specific layout on demand.
-  // Each still respects the inner-second-pair rule (col/row index 1 is 1 or 2).
-  const PATTERNS = {
-    p1: { col: [0, 1, 2, 3], row: [1, 2, 3, 0] },
-    p2: { col: [3, 2, 1, 0], row: [2, 1, 0, 3] },
-    p3a: { col: [0, 2, 1, 3], row: [3, 1, 2, 0] },
-    p3b: { col: [3, 1, 0, 2], row: [0, 2, 1, 3] }
-  };
-
   function setRowColFill(r, c, on) {
     for (let cc = 0; cc < N; cc++) cellFills[r * N + cc].classList.toggle('on', on);
     for (let rr = 0; rr < N; rr++) cellFills[rr * N + c].classList.toggle('on', on);
@@ -765,14 +733,8 @@
   }
 
   function reset() {
-    const preset = PATTERNS[patternSelect.value];
-    if (preset) {
-      colOrder = preset.col.slice();
-      rowOrder = preset.row.slice();
-    } else {
-      colOrder = orderWithInnerSecond();
-      rowOrder = orderWithInnerSecond();
-    }
+    colOrder = orderWithInnerSecond();
+    rowOrder = orderWithInnerSecond();
     step = 0;
     dead = false;
     roundResolved = false;
