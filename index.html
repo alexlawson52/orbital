@@ -89,7 +89,7 @@
 
   .thin-line {
     stroke: var(--ink);
-    stroke-width: 3;
+    stroke-width: 4.5;
     opacity: 0;
     transition: opacity 0.2s ease;
   }
@@ -110,7 +110,7 @@
 
   .x-line {
     stroke: var(--ink);
-    stroke-width: 4.5;
+    stroke-width: 6.75;
     opacity: 0;
     transition: opacity 0.2s ease;
   }
@@ -128,8 +128,8 @@
 
   .guide-line {
     stroke: var(--rule);
-    stroke-width: 1.5;
-    stroke-dasharray: 7 6;
+    stroke-width: 2.25;
+    stroke-dasharray: 10.5 9;
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.2s ease;
@@ -142,7 +142,7 @@
   .spawn-dot-ring {
     fill: none;
     stroke: var(--ink-soft);
-    stroke-width: 6;
+    stroke-width: 9;
     opacity: 0;
     transition: opacity 0.25s ease;
   }
@@ -161,14 +161,14 @@
   .death-bubble-bg {
     fill: var(--card);
     stroke: var(--ink);
-    stroke-width: 1.5;
+    stroke-width: 2.25;
   }
 
   .death-bubble-text {
     fill: #f2c94c;
     font-family: "JetBrains Mono", ui-monospace, monospace;
     font-weight: 700;
-    font-size: 15px;
+    font-size: 22.5px;
     text-anchor: middle;
     dominant-baseline: central;
     user-select: none;
@@ -198,7 +198,7 @@
     fill: var(--card);
     font-family: "JetBrains Mono", ui-monospace, monospace;
     font-weight: 700;
-    font-size: 15.6px;
+    font-size: 23.4px;
     text-anchor: middle;
     dominant-baseline: central;
     user-select: none;
@@ -207,7 +207,7 @@
   .hitbox-dot {
     fill: var(--user-marker);
     stroke: var(--card);
-    stroke-width: 3;
+    stroke-width: 4.5;
   }
 
   .hitbox-dot.dead {
@@ -376,7 +376,7 @@
 </div>
 
 <script>
-  const SCALE = 1.5; // overall board scale-up; every board dimension derives from this
+  const SCALE = 2.25; // overall board scale-up (1.5 x 1.5 across two rounds); every board dimension derives from this
   const CELL = 75 * SCALE;
   const N = 4;
   const STEPS = N * 3; // N spawns, then N pairs each doing a fire + revert step
@@ -452,8 +452,8 @@
     removeDeathBubble();
     const text = DEATH_LINES[Math.floor(Math.random() * DEATH_LINES.length)];
     const bubbleY = y - 40 * SCALE;
-    const charW = 9; // approx JetBrains Mono advance width at the 15px bubble font-size
-    const width = Math.max(70 * SCALE, text.length * charW + 24);
+    const charW = 13.5; // approx JetBrains Mono advance width at the 22.5px bubble font-size
+    const width = Math.max(70 * SCALE, text.length * charW + 36);
     const height = 30 * SCALE;
     const bg = svgEl('rect', {
       class: 'death-bubble-bg',
