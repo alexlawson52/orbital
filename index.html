@@ -1,0 +1,802 @@
+<title>Orbital Omen</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Public+Sans:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #f6f3ec;
+    --card: #fbf9f4;
+    --ink: #2d3a63;
+    --ink-soft: #4a5687;
+    --rule: #c9c3b4;
+    --focal: #eee8d9;
+    --text: #2a2820;
+    --text-dim: #8b8878;
+    --tick-off: #d8d3c3;
+    --center-red: #b1382b;
+    --user-marker: #3f8f5f;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #171a21;
+      --card: #1d212a;
+      --ink: #8494e0;
+      --ink-soft: #6b79b8;
+      --rule: #333a4a;
+      --focal: #1f2534;
+      --text: #e8e6dc;
+      --text-dim: #767c8f;
+      --tick-off: #2b3140;
+      --center-red: #d9584a;
+      --user-marker: #5fbb85;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --paper: #171a21;
+    --card: #1d212a;
+    --ink: #8494e0;
+    --ink-soft: #6b79b8;
+    --rule: #333a4a;
+    --focal: #1f2534;
+    --text: #e8e6dc;
+    --text-dim: #767c8f;
+    --tick-off: #2b3140;
+    --center-red: #d9584a;
+    --user-marker: #5fbb85;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--paper);
+    font-family: "Public Sans", -apple-system, BlinkMacSystemFont, sans-serif;
+    color: var(--text);
+  }
+
+  .card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 48px;
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: 14px;
+  }
+
+  h1 {
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-weight: 700;
+    font-size: 20px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin: 0;
+    text-wrap: balance;
+  }
+
+  svg {
+    display: block;
+  }
+
+  .focal-bg { fill: var(--focal); }
+
+  .thin-line {
+    stroke: var(--ink);
+    stroke-width: 3;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+
+  .thin-line.on {
+    opacity: 1;
+  }
+
+  .cell-fill {
+    fill: var(--ink);
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+
+  .cell-fill.on {
+    opacity: 1;
+  }
+
+  .x-line {
+    stroke: var(--ink);
+    stroke-width: 4.5;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+
+  .x-fill {
+    fill: var(--ink);
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+
+  .x-line.on,
+  .x-fill.on {
+    opacity: 1;
+  }
+
+  .guide-line {
+    stroke: var(--rule);
+    stroke-width: 1.5;
+    stroke-dasharray: 7 6;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+  }
+
+  .guide-line.on {
+    opacity: 1;
+  }
+
+  .spawn-dot-ring {
+    fill: none;
+    stroke: var(--ink-soft);
+    stroke-width: 6;
+    opacity: 0;
+    transition: opacity 0.25s ease;
+  }
+
+  .spawn-dot-core {
+    fill: var(--ink);
+    opacity: 0;
+    transition: opacity 0.25s ease;
+  }
+
+  .spawn-dot-ring.on,
+  .spawn-dot-core.on {
+    opacity: 1;
+  }
+
+  .death-bubble-bg {
+    fill: var(--card);
+    stroke: var(--ink);
+    stroke-width: 1.5;
+  }
+
+  .death-bubble-text {
+    fill: #f2c94c;
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-weight: 700;
+    font-size: 15px;
+    text-anchor: middle;
+    dominant-baseline: central;
+    user-select: none;
+  }
+
+  .center-dot {
+    fill: var(--center-red);
+  }
+
+  .order-badge-bg,
+  .order-badge-text {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+  }
+
+  .order-badge-bg.on,
+  .order-badge-text.on {
+    opacity: 1;
+  }
+
+  .order-badge-bg {
+    fill: var(--ink);
+  }
+
+  .order-badge-text {
+    fill: var(--card);
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-weight: 700;
+    font-size: 15.6px;
+    text-anchor: middle;
+    dominant-baseline: central;
+    user-select: none;
+  }
+
+  .hitbox-dot {
+    fill: var(--user-marker);
+    stroke: var(--card);
+    stroke-width: 3;
+  }
+
+  .hitbox-dot.dead {
+    fill: var(--center-red);
+  }
+
+  #board {
+    cursor: crosshair;
+  }
+
+  /* progress rail: circle glyphs for the 4 spawn steps, square glyphs for the 4 fire steps */
+  .rail {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .tick-glyph {
+    stroke: var(--tick-off);
+    fill: transparent;
+    transition: stroke 0.2s ease, fill 0.2s ease;
+  }
+
+  .tick-glyph.done { stroke: var(--ink); fill: var(--ink); }
+  .tick-glyph.outline.done { fill: none; }
+
+  .status {
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.04em;
+    color: var(--text-dim);
+    min-width: 15ch;
+    text-align: center;
+  }
+
+  .stats {
+    display: flex;
+    gap: 18px;
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.04em;
+    color: var(--text-dim);
+  }
+
+  #winCount {
+    color: var(--user-marker);
+    font-weight: 700;
+  }
+
+  #lossCount {
+    color: var(--center-red);
+    font-weight: 700;
+  }
+
+  .controls {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .controls-row {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+  }
+
+  button {
+    font-family: "Public Sans", sans-serif;
+    font-weight: 600;
+    font-size: 13px;
+    padding: 9px 20px;
+    border-radius: 7px;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: opacity 0.15s ease, background 0.15s ease;
+  }
+
+  button:focus-visible {
+    outline: 2px solid var(--ink);
+    outline-offset: 2px;
+  }
+
+  #nextBtn {
+    background: var(--ink);
+    color: var(--card);
+  }
+
+  #resetBtn,
+  #backBtn {
+    background: transparent;
+    color: var(--text-dim);
+    border-color: var(--rule);
+  }
+
+  #autoBtn {
+    background: var(--ink-soft);
+    color: var(--card);
+  }
+
+  #autoBtn.active {
+    background: var(--center-red);
+  }
+
+  .loop-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    color: var(--text-dim);
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .loop-toggle input {
+    accent-color: var(--ink);
+    cursor: pointer;
+  }
+
+  button:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+</style>
+
+<div class="card">
+  <h1>Orbital Omen</h1>
+
+  <svg id="board"></svg>
+
+  <div class="rail" id="rail"></div>
+
+  <span class="status" id="status">step 0 / 8</span>
+
+  <div class="stats">
+    <span><span id="winCount">0</span> wins</span>
+    <span><span id="lossCount">0</span> losses</span>
+  </div>
+
+  <div class="controls">
+    <div class="controls-row">
+      <button id="resetBtn">Reset</button>
+      <button id="backBtn">Back</button>
+      <button id="nextBtn">Next</button>
+      <button id="autoBtn">Auto</button>
+    </div>
+    <div class="controls-row">
+      <label class="loop-toggle">
+        <input type="checkbox" id="loopCheckbox">
+        Loop
+      </label>
+      <label class="loop-toggle">
+        <input type="checkbox" id="orderCheckbox">
+        Show Order Indicator
+      </label>
+      <label class="loop-toggle">
+        <input type="checkbox" id="guideCheckbox">
+        Show Guide X
+      </label>
+    </div>
+  </div>
+</div>
+
+<script>
+  const SCALE = 1.5; // overall board scale-up; every board dimension derives from this
+  const CELL = 75 * SCALE;
+  const N = 4;
+  const STEPS = N * 3; // N spawns, then N pairs each doing a fire + revert step
+  const boardEl = document.getElementById('board');
+  const railEl = document.getElementById('rail');
+  const nextBtn = document.getElementById('nextBtn');
+  const backBtn = document.getElementById('backBtn');
+  const resetBtn = document.getElementById('resetBtn');
+  const autoBtn = document.getElementById('autoBtn');
+  const loopCheckbox = document.getElementById('loopCheckbox');
+  const orderCheckbox = document.getElementById('orderCheckbox');
+  const guideCheckbox = document.getElementById('guideCheckbox');
+  const statusEl = document.getElementById('status');
+  const winCountEl = document.getElementById('winCount');
+  const lossCountEl = document.getElementById('lossCount');
+  const STEP_MS = 750;
+  const SPAWN_STEP_MS = 1250;
+
+  const BLOCK_MIN = CELL;
+  const BLOCK_MAX = CELL * (N + 1);
+  const TOP_Y = CELL * 0.5;
+  const RIGHT_X = CELL * (N + 1.5);
+  const TOTAL = CELL * (N + 2);
+  const MID = (BLOCK_MIN + BLOCK_MAX) / 2;
+  const CENTER_DOT_R = (CELL / 3) * 0.85;
+  const center = k => BLOCK_MIN + (k + 0.5) * CELL; // center of inner column/row k
+
+  boardEl.setAttribute('width', TOTAL);
+  boardEl.setAttribute('height', TOTAL);
+  boardEl.setAttribute('viewBox', `0 0 ${TOTAL} ${TOTAL}`);
+
+  const NS = 'http://www.w3.org/2000/svg';
+  function svgEl(tag, attrs) {
+    const el = document.createElementNS(NS, tag);
+    for (const key in attrs) el.setAttribute(key, attrs[key]);
+    return el;
+  }
+
+  let colOrder, rowOrder, step;
+  const topRings = [], topCores = [];
+  const rightRings = [], rightCores = [];
+  const vThinLines = [], hThinLines = [];
+  const cellFills = []; // [row * N + col]
+  const railTicks = [];
+  const orderBadgeBgs = [], orderBadgeTexts = [];
+  let xDiag1, xDiag2, xNorthFill, xSouthFill, hitboxDot, guideLine1, guideLine2;
+  let hitbox = null;
+  let dead = false;
+  let roundResolved = false; // guards against double-counting a win/loss for one round
+  let wins = 0, losses = 0;
+  let deathBubbleEls = null;
+
+  function updateCounters() {
+    winCountEl.textContent = wins;
+    lossCountEl.textContent = losses;
+  }
+
+  function removeDeathBubble() {
+    if (!deathBubbleEls) return;
+    deathBubbleEls.forEach(el => el.remove());
+    deathBubbleEls = null;
+  }
+
+  const DEATH_LINES = [
+    "That's a 50 DKP MINUS",
+    'Bruh....',
+    'ow fuck!',
+    'Floor tanking again...',
+    'Fire bad!'
+  ];
+
+  function showDeathBubble(x, y) {
+    removeDeathBubble();
+    const text = DEATH_LINES[Math.floor(Math.random() * DEATH_LINES.length)];
+    const bubbleY = y - 40 * SCALE;
+    const charW = 9; // approx JetBrains Mono advance width at the 15px bubble font-size
+    const width = Math.max(70 * SCALE, text.length * charW + 24);
+    const height = 30 * SCALE;
+    const bg = svgEl('rect', {
+      class: 'death-bubble-bg',
+      x: x - width / 2, y: bubbleY - height / 2,
+      width, height, rx: 8 * SCALE, ry: 8 * SCALE
+    });
+    const txt = svgEl('text', { class: 'death-bubble-text', x, y: bubbleY });
+    txt.textContent = text;
+    boardEl.appendChild(bg);
+    boardEl.appendChild(txt);
+    deathBubbleEls = [bg, txt];
+  }
+
+  function buildBoard() {
+    boardEl.innerHTML = '';
+
+    boardEl.appendChild(svgEl('rect', {
+      class: 'focal-bg',
+      x: BLOCK_MIN, y: BLOCK_MIN,
+      width: BLOCK_MAX - BLOCK_MIN, height: BLOCK_MAX - BLOCK_MIN
+    }));
+
+    // persistent center marker, bottom layer: present through every step, covered by
+    // anything that lights up above it (cell fills, the X flourish, thin lines)
+    boardEl.appendChild(svgEl('circle', { class: 'center-dot', cx: MID, cy: MID, r: CENTER_DOT_R }));
+
+    // optional guide X: a purely visual reference spanning the whole arena, not a hazard
+    guideLine1 = svgEl('line', { class: 'guide-line', x1: BLOCK_MIN, y1: BLOCK_MIN, x2: BLOCK_MAX, y2: BLOCK_MAX });
+    guideLine2 = svgEl('line', { class: 'guide-line', x1: BLOCK_MAX, y1: BLOCK_MIN, x2: BLOCK_MIN, y2: BLOCK_MAX });
+    boardEl.appendChild(guideLine1);
+    boardEl.appendChild(guideLine2);
+
+    // cell fills, drawn above the focal background but below the thin pair-lines and dots
+    for (let r = 0; r < N; r++) {
+      for (let c = 0; c < N; c++) {
+        const rect = svgEl('rect', {
+          class: 'cell-fill',
+          x: BLOCK_MIN + c * CELL, y: BLOCK_MIN + r * CELL,
+          width: CELL, height: CELL
+        });
+        boardEl.appendChild(rect);
+        cellFills[r * N + c] = rect;
+      }
+    }
+
+    // one-time giant-X flourish (step 5 only): diagonals plus filled north/south wedges
+    xNorthFill = svgEl('polygon', {
+      class: 'x-fill',
+      points: `${BLOCK_MIN},${BLOCK_MIN} ${BLOCK_MAX},${BLOCK_MIN} ${MID},${MID}`
+    });
+    xSouthFill = svgEl('polygon', {
+      class: 'x-fill',
+      points: `${BLOCK_MIN},${BLOCK_MAX} ${BLOCK_MAX},${BLOCK_MAX} ${MID},${MID}`
+    });
+    boardEl.appendChild(xNorthFill);
+    boardEl.appendChild(xSouthFill);
+
+    xDiag1 = svgEl('line', { class: 'x-line', x1: BLOCK_MIN, y1: BLOCK_MIN, x2: BLOCK_MAX, y2: BLOCK_MAX });
+    xDiag2 = svgEl('line', { class: 'x-line', x1: BLOCK_MAX, y1: BLOCK_MIN, x2: BLOCK_MIN, y2: BLOCK_MAX });
+    boardEl.appendChild(xDiag1);
+    boardEl.appendChild(xDiag2);
+
+    // thin pair-lines, running through the center of each column/row
+    for (let k = 0; k < N; k++) {
+      const x = center(k);
+      const vLine = svgEl('line', { class: 'thin-line', x1: x, y1: TOP_Y, x2: x, y2: BLOCK_MAX });
+      boardEl.appendChild(vLine);
+      vThinLines[k] = vLine;
+
+      const y = center(k);
+      const hLine = svgEl('line', { class: 'thin-line', x1: RIGHT_X, y1: y, x2: BLOCK_MIN, y2: y });
+      boardEl.appendChild(hLine);
+      hThinLines[k] = hLine;
+    }
+
+    for (let k = 0; k < N; k++) {
+      const cx = center(k), cy = TOP_Y;
+      const ring = svgEl('circle', { class: 'spawn-dot-ring', cx, cy, r: 20 * SCALE });
+      const core = svgEl('circle', { class: 'spawn-dot-core', cx, cy, r: 10 * SCALE });
+      boardEl.appendChild(ring); boardEl.appendChild(core);
+      topRings[k] = ring; topCores[k] = core;
+    }
+
+    for (let k = 0; k < N; k++) {
+      const cx = RIGHT_X, cy = center(k);
+      const ring = svgEl('circle', { class: 'spawn-dot-ring', cx, cy, r: 20 * SCALE });
+      const core = svgEl('circle', { class: 'spawn-dot-core', cx, cy, r: 10 * SCALE });
+      boardEl.appendChild(ring); boardEl.appendChild(core);
+      rightRings[k] = ring; rightCores[k] = core;
+    }
+
+    // optional helper: a numbered badge at each pair's own line-intersection point,
+    // showing the order it spawned in (positioned per-pair in render, once shuffled)
+    for (let k = 0; k < N; k++) {
+      const bg = svgEl('circle', { class: 'order-badge-bg', cx: 0, cy: 0, r: 6 * SCALE * 1.3 });
+      const txt = svgEl('text', { class: 'order-badge-text', x: 0, y: 0 });
+      txt.textContent = String(k + 1);
+      boardEl.appendChild(bg);
+      boardEl.appendChild(txt);
+      orderBadgeBgs[k] = bg;
+      orderBadgeTexts[k] = txt;
+    }
+
+    // the player's hitbox marker, always drawn last (on top of everything)
+    hitboxDot = svgEl('circle', { class: 'hitbox-dot', cx: MID, cy: MID, r: 9 * SCALE * 0.7 });
+    boardEl.appendChild(hitboxDot);
+  }
+
+  function buildRail() {
+    railEl.innerHTML = '';
+    for (let s = 1; s <= STEPS; s++) {
+      const svg = svgEl('svg', { width: 14, height: 14, viewBox: '0 0 14 14' });
+      let glyph;
+      if (s <= N) {
+        glyph = svgEl('circle', { class: 'tick-glyph', cx: 7, cy: 7, r: 4.5, 'stroke-width': 2 });
+      } else {
+        const m = s - N;
+        const isFire = (m - 1) % 2 === 0;
+        glyph = isFire
+          ? svgEl('rect', { class: 'tick-glyph', x: 2.5, y: 2.5, width: 9, height: 9, 'stroke-width': 2 })
+          : svgEl('rect', { class: 'tick-glyph outline', x: 2.5, y: 2.5, width: 9, height: 9, 'stroke-width': 2 });
+      }
+      svg.appendChild(glyph);
+      railEl.appendChild(svg);
+      railTicks[s - 1] = glyph;
+    }
+  }
+
+  function shuffled(n) {
+    const arr = Array.from({ length: n }, (_, i) => i);
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }
+
+  function setRowColFill(r, c, on) {
+    for (let cc = 0; cc < N; cc++) cellFills[r * N + cc].classList.toggle('on', on);
+    for (let rr = 0; rr < N; rr++) cellFills[rr * N + c].classList.toggle('on', on);
+  }
+
+  // true collision test: the hitbox itself is a single point (1px) — only the hazard
+  // shapes' own rendered geometry (fill area / stroke width) gives it any tolerance
+  function isHazardAt(x, y) {
+    const pt = boardEl.createSVGPoint();
+    pt.x = x; pt.y = y;
+    for (const el of cellFills) if (el.classList.contains('on') && el.isPointInFill(pt)) return true;
+    for (const el of vThinLines) if (el.classList.contains('on') && el.isPointInStroke(pt)) return true;
+    for (const el of hThinLines) if (el.classList.contains('on') && el.isPointInStroke(pt)) return true;
+    if (xDiag1.classList.contains('on')) {
+      if (xDiag1.isPointInStroke(pt) || xDiag2.isPointInStroke(pt)) return true;
+      if (xNorthFill.isPointInFill(pt) || xSouthFill.isPointInFill(pt)) return true;
+    }
+    return false;
+  }
+
+  function checkCollision() {
+    if (dead || !hitbox) return;
+    if (isHazardAt(hitbox.x, hitbox.y)) {
+      // dead, but the sequence keeps running — the corpse just stops responding to clicks
+      dead = true;
+      roundResolved = true;
+      losses++;
+      updateCounters();
+      hitboxDot.classList.add('dead');
+      showDeathBubble(hitbox.x, hitbox.y);
+      updateStatus();
+    }
+  }
+
+  function placeHitbox(x, y) {
+    if (dead) return;
+    // moving the dot is never itself lethal — collision is only an instantaneous
+    // snapshot taken at each step transition (see render()). You can freely move
+    // into an already-fired area right after it fires.
+    hitbox = { x, y };
+    hitboxDot.setAttribute('cx', x);
+    hitboxDot.setAttribute('cy', y);
+  }
+
+  boardEl.addEventListener('click', evt => {
+    const pt = boardEl.createSVGPoint();
+    pt.x = evt.clientX;
+    pt.y = evt.clientY;
+    const svgPt = pt.matrixTransform(boardEl.getScreenCTM().inverse());
+    if (svgPt.x < BLOCK_MIN || svgPt.x > BLOCK_MAX || svgPt.y < BLOCK_MIN || svgPt.y > BLOCK_MAX) return;
+    placeHitbox(svgPt.x, svgPt.y);
+  });
+
+  // pure function of `step`: fully recomputes every element's visibility from scratch,
+  // so stepping backward, forward, or jumping around is always correct
+  function render() {
+    cellFills.forEach(f => f.classList.remove('on'));
+
+    for (let k = 0; k < N; k++) {
+      const c = colOrder[k];
+      const r = rowOrder[k];
+      const spawnAt = k + 1;
+      const fireAt = N + 2 * k + 1;
+      const revertAt = N + 2 * k + 2;
+
+      let state;
+      if (step < spawnAt) state = 'none';
+      else if (step < fireAt) state = 'spawned';
+      else if (step === fireAt) state = 'fired';
+      else state = 'gone';
+
+      const showCircle = state === 'spawned' || state === 'fired';
+      const showThin = state === 'spawned';
+
+      topRings[c].classList.toggle('on', showCircle);
+      topCores[c].classList.toggle('on', showCircle);
+      rightRings[r].classList.toggle('on', showCircle);
+      rightCores[r].classList.toggle('on', showCircle);
+      vThinLines[c].classList.toggle('on', showThin);
+      hThinLines[r].classList.toggle('on', showThin);
+
+      if (state === 'fired') setRowColFill(r, c, true);
+
+      // order-helper badge sits at this pair's own line intersection
+      const showBadge = orderCheckbox.checked && showThin;
+      orderBadgeBgs[k].setAttribute('cx', center(c));
+      orderBadgeBgs[k].setAttribute('cy', center(r));
+      orderBadgeTexts[k].setAttribute('x', center(c));
+      orderBadgeTexts[k].setAttribute('y', center(r));
+      orderBadgeBgs[k].classList.toggle('on', showBadge);
+      orderBadgeTexts[k].classList.toggle('on', showBadge);
+    }
+
+    // the giant-X flourish is a one-time effect, shown only during step N+1 (the first fire)
+    const showX = step === N + 1;
+    xDiag1.classList.toggle('on', showX);
+    xDiag2.classList.toggle('on', showX);
+    xNorthFill.classList.toggle('on', showX);
+    xSouthFill.classList.toggle('on', showX);
+
+    railTicks.forEach((t, i) => t.classList.toggle('done', step >= i + 1));
+
+    checkCollision(); // may mark the player dead for the rest of the sequence
+
+    if (!dead && !roundResolved && step === STEPS) {
+      // survived the whole sequence with no hit: a win
+      roundResolved = true;
+      wins++;
+      updateCounters();
+    }
+
+    updateStatus();
+    nextBtn.disabled = false; // at the final step, Next loops back to the start instead
+    backBtn.disabled = step <= 0;
+  }
+
+  function reset() {
+    colOrder = shuffled(N);
+    rowOrder = shuffled(N);
+    step = 0;
+    dead = false;
+    roundResolved = false;
+    autoBtn.disabled = false;
+    hitboxDot.classList.remove('dead');
+    removeDeathBubble();
+    render(); // clears every hazard for the fresh step-0 board before placing the hitbox
+    placeHitbox(MID, MID + CENTER_DOT_R); // bottom edge of the red center circle
+  }
+
+  function advance() {
+    if (step >= STEPS) return;
+    step++;
+    render();
+  }
+
+  function stepBack() {
+    if (step <= 0) return;
+    step--;
+    render();
+  }
+
+  let autoTimer = null;
+  let autoRunning = false;
+
+  function stopAuto() {
+    if (!autoRunning) return;
+    autoRunning = false;
+    if (autoTimer) { clearTimeout(autoTimer); autoTimer = null; }
+    autoBtn.textContent = 'Auto';
+    autoBtn.classList.remove('active');
+  }
+
+  function scheduleAutoTick() {
+    // the delay is for the step we're about to enter: spawns are slower than fire/revert
+    const enteringSpawn = step + 1 <= N;
+    const delay = enteringSpawn ? SPAWN_STEP_MS : STEP_MS;
+    autoTimer = setTimeout(() => {
+      if (!autoRunning) return;
+      if (step >= STEPS) {
+        // cycle finished: always reset: only keep auto-playing if Loop is checked
+        reset();
+        if (loopCheckbox.checked) scheduleAutoTick();
+        else stopAuto();
+        return;
+      }
+      advance();
+      scheduleAutoTick();
+    }, delay);
+  }
+
+  function toggleAuto() {
+    if (autoRunning) { stopAuto(); return; }
+    autoRunning = true;
+    autoBtn.textContent = 'Stop';
+    autoBtn.classList.add('active');
+    scheduleAutoTick();
+  }
+
+  function updateStatus() {
+    if (dead) {
+      statusEl.textContent = step >= STEPS ? 'dead - press reset' : `dead - step ${step} / ${STEPS}`;
+      return;
+    }
+    if (roundResolved && step === STEPS) { statusEl.textContent = 'win! - press reset'; return; }
+    if (step === 0) { statusEl.textContent = `step 0 / ${STEPS}`; return; }
+    if (step <= N) { statusEl.textContent = `step ${step} / ${STEPS} - spawn`; return; }
+    const m = step - N;
+    const phaseLabel = (m - 1) % 2 === 0 ? 'fire' : 'revert';
+    statusEl.textContent = `step ${step} / ${STEPS} - ${phaseLabel}`;
+  }
+
+  nextBtn.addEventListener('click', () => {
+    stopAuto();
+    if (step >= STEPS) reset(); // at the end, loop back to the entirely blank step 0
+    else advance();
+  });
+  backBtn.addEventListener('click', () => { stopAuto(); stepBack(); });
+  resetBtn.addEventListener('click', () => { stopAuto(); reset(); });
+  autoBtn.addEventListener('click', toggleAuto);
+  orderCheckbox.addEventListener('change', render);
+  guideCheckbox.addEventListener('change', () => {
+    guideLine1.classList.toggle('on', guideCheckbox.checked);
+    guideLine2.classList.toggle('on', guideCheckbox.checked);
+  });
+
+  buildBoard();
+  buildRail();
+  reset();
+</script>
